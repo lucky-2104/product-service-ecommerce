@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import com.ecommerce.product_service.entity.Category;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -20,10 +21,10 @@ public record UpdateProductRequest(
 		@Positive(message = "Price must be strictly greater than 0")
 		BigDecimal price,
 		
-		@NotBlank(message="Cant be null Set the quantity of product")
+		@Positive(message="Cant be null Set the quantity of product")
 		int stockQuantity,
 		
-		@NotBlank(message="Define the category of product")
+		@NotNull(message="Define the category of product")
 		Category category
 		
 		
