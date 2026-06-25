@@ -1,0 +1,38 @@
+server:
+  port: <port>
+
+spring:
+  application:
+    name: product-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/<db name>
+    username: <db username>
+    password: <db password>
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+jwt:
+  secret: <secret jwt token>
+  access-token-expiry: <access token expiry time in ms>
+  refresh-token-expiry: <access token expiry time is ms>
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+eureka:
+  client:
+     service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
