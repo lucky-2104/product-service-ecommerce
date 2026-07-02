@@ -53,6 +53,17 @@ public class GlobalExceptionalHandler {
 		
 		
 	}
+	@ExceptionHandler(InsufficientInventoryException.class)
+	public ResponseEntity<?> handlesInsufficientInventoryException(InsufficientInventoryException ex){
+		ErrorResponse error = ErrorResponse.builder()
+				.message(ex.getMessage())
+				.status(HttpStatus.CONFLICT.value())
+				.timestamp(LocalDateTime.now())
+				.build();
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+	}
+
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<?> handlesGenericException(Exception ex){
 		

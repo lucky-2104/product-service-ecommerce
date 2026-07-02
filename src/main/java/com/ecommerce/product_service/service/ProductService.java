@@ -1,10 +1,14 @@
 package com.ecommerce.product_service.service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.ecommerce.product_service.event.OrderItemEvent;
+import com.ecommerce.product_service.event.OrderPlacedEvent;
+import com.ecommerce.product_service.event.OrderStatusEvent;
+import com.ecommerce.product_service.exception.InsufficientInventoryException;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import com.ecommerce.product_service.dto.request.CreateProductRequest;
@@ -22,24 +26,20 @@ public class ProductService {
 
 	
 	private final ProductRepository productRepository;
+	private final ProductEventPublishService productEventService;
 	
 	
 	private ProductResponse mapProductToProductResponse(Product product){
-		
-			ProductResponse tempResponse = ProductResponse.builder()
-					.id(product.getId())
-					.name(product.getName())
-					.description(product.getDescription())
-					.price(product.getPrice())
-					.stockQuantity(product.getStockQuantity())
-					.category(product.getCategory())
-					.isActive(product.isActive())
-					.build();
 
-		return tempResponse;
-		
-		
-		
+		return ProductResponse.builder()
+				.id(product.getId())
+				.name(product.getName())
+				.description(product.getDescription())
+				.price(product.getPrice())
+				.stockQuantity(product.getStockQuantity())
+				.category(product.getCategory())
+				.isActive(product.isActive())
+				.build();
 	}
 	
 
@@ -104,6 +104,24 @@ public class ProductService {
 		
 		
 	}
-	
-	
+
+
+	@Transactional
+    public void reduceInventory(OrderPlacedEvent event) {
+
+		for(OrderItemEvent item: event.items()){
+
+			UUID productId = item.productId();
+			Integer stock = item.quantity();
+			int isValid = productRepository.decrementStock(productId,stock);
+			if(isValid == 0){
+				productEventService.publish(new OrderStatusEvent(event.orderId(),"ORDER_FAILED"));
+			}
+			else{
+				productEventService.publish(new OrderStatusEvent(event.orderId(),"ORDER_COMPLETED"));
+			}
+		}
+
+
+    }
 }
