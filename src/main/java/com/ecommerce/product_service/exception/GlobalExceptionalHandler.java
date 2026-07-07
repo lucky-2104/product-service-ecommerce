@@ -7,7 +7,6 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -67,10 +66,10 @@ public class GlobalExceptionalHandler {
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<?> handlesGenericException(Exception ex){
 		
-		
+
 		ErrorResponse error = new ErrorResponse(
 				
-				"Unexpected Error Occured",
+				"Unexpected Error Occurred : ",
 				HttpStatus.INTERNAL_SERVER_ERROR.value(),
 				LocalDateTime.now()
 				);
