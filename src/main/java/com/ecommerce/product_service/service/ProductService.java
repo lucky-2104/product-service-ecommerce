@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import com.ecommerce.product_service.event.OrderItemEvent;
 import com.ecommerce.product_service.event.OrderPlacedEvent;
 import com.ecommerce.product_service.event.OrderStatusEvent;
-import com.ecommerce.product_service.exception.InsufficientInventoryException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +27,7 @@ public class ProductService {
 	private final ProductRepository productRepository;
 	private final ProductEventPublishService productEventService;
 	
-	
+	//Helper Functions
 	private ProductResponse mapProductToProductResponse(Product product){
 
 		return ProductResponse.builder()
@@ -42,14 +41,15 @@ public class ProductService {
 				.build();
 	}
 	
-
+	// Retrieve all product that are set as TRUE.(not soft deleted)
 	public List<ProductResponse> getAllProduct(){
 		
 		List<Product> allProductsThatAreActive = productRepository.findByIsActiveTrue();
 
 		return allProductsThatAreActive.stream().map(this::mapProductToProductResponse).collect(Collectors.toList());
 	}
-	
+
+	//Get Product by particular ID
 	public ProductResponse getProductById(UUID id) {
 		
 		Product product = productRepository.findById(id).orElseThrow(()->new ProductNotFoundException("Can`t find Product with ID : "+id));
@@ -59,7 +59,8 @@ public class ProductService {
 	    }
 		return mapProductToProductResponse(product);
 	}
-	
+
+	//Creating / Adding new product to database.
 	public ProductResponse createProduct(CreateProductRequest request) {
 		
 		
@@ -76,7 +77,8 @@ public class ProductService {
 		return mapProductToProductResponse(savedProduct);
 		
 	}
-	
+
+	//Updating product(need to pass the UpdateProductRequest-> name ,description , price , stock , category )
 	public ProductResponse updateProduct(UUID id,UpdateProductRequest request) {
 		
 		Product fetchedProduct = productRepository.findById(id).orElseThrow(()->new ProductNotFoundException("Can`t find Product with ID : "+id));
@@ -94,7 +96,8 @@ public class ProductService {
 		
 		
 	}
-	
+
+	//Deleted product (Setting isActive = False i.e. soft Deleting product)
 	public void deleteProduct(UUID id) {
 		Product fetchedProduct = productRepository.findById(id).orElseThrow(()->new ProductNotFoundException("Can`t find Product with ID : "+id));
 		
@@ -105,7 +108,7 @@ public class ProductService {
 		
 	}
 
-
+	//Used to update the quantity whenever a order is created by user in Order-service .
 	@Transactional
     public void reduceInventory(OrderPlacedEvent event) {
 
