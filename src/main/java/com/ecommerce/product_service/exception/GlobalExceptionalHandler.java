@@ -69,7 +69,7 @@ public class GlobalExceptionalHandler {
 
 		ErrorResponse error = new ErrorResponse(
 				
-				"Unexpected Error Occurred : ",
+				"Unexpected Error Occurred : " + ex.getMessage(),
 				HttpStatus.INTERNAL_SERVER_ERROR.value(),
 				LocalDateTime.now()
 				);

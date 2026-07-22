@@ -8,6 +8,12 @@ import com.ecommerce.product_service.event.OrderItemEvent;
 import com.ecommerce.product_service.event.OrderPlacedEvent;
 import com.ecommerce.product_service.event.OrderStatusEvent;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.ecommerce.product_service.dto.request.CreateProductRequest;
@@ -21,12 +27,13 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductService {
 
 	
 	private final ProductRepository productRepository;
 	private final ProductEventPublishService productEventService;
-	
+	private final CacheManager cacheManager;
 	//Helper Functions
 	private ProductResponse mapProductToProductResponse(Product product){
 
@@ -50,8 +57,14 @@ public class ProductService {
 	}
 
 	//Get Product by particular ID
+	@Cacheable(
+			value="productCache",
+			key="#id",
+			unless = "#result == null"
+	)
 	public ProductResponse getProductById(UUID id) {
-		
+
+		log.info("Fetching the product from DB with ID : {}",id);
 		Product product = productRepository.findById(id).orElseThrow(()->new ProductNotFoundException("Can`t find Product with ID : "+id));
 		
 		if (!product.isActive()) {
@@ -79,6 +92,11 @@ public class ProductService {
 	}
 
 	//Updating product(need to pass the UpdateProductRequest-> name ,description , price , stock , category )
+	@CachePut(
+			value = "productCache",
+			key="#id",
+			unless = "#result == null"
+	)
 	public ProductResponse updateProduct(UUID id,UpdateProductRequest request) {
 		
 		Product fetchedProduct = productRepository.findById(id).orElseThrow(()->new ProductNotFoundException("Can`t find Product with ID : "+id));
@@ -98,6 +116,10 @@ public class ProductService {
 	}
 
 	//Deleted product (Setting isActive = False i.e. soft Deleting product)
+	@CacheEvict(
+			value="productCache",
+			key="#id"
+	)
 	public void deleteProduct(UUID id) {
 		Product fetchedProduct = productRepository.findById(id).orElseThrow(()->new ProductNotFoundException("Can`t find Product with ID : "+id));
 		
@@ -108,23 +130,47 @@ public class ProductService {
 		
 	}
 
-	//Used to update the quantity whenever a order is created by user in Order-service .
+	//Used to update the quantity whenever an order is created by user in Order-service .
 	@Transactional
     public void reduceInventory(OrderPlacedEvent event) {
 
-		for(OrderItemEvent item: event.items()){
+		//  Validate
+		for (OrderItemEvent item : event.items()) {
 
-			UUID productId = item.productId();
-			Integer stock = item.quantity();
-			int isValid = productRepository.decrementStock(productId,stock);
-			if(isValid == 0){
-				productEventService.publish(new OrderStatusEvent(event.orderId(),"ORDER_FAILED"));
+			Product product = productRepository.findById(item.productId())
+					.orElseThrow(() ->
+							new ProductNotFoundException(
+									"Product not found : " + item.productId()));
+
+			if (!product.isActive()) {
+				productEventService.publish(
+						new OrderStatusEvent(event.orderId(), "ORDER_FAILED"));
+				return;
 			}
-			else{
-				productEventService.publish(new OrderStatusEvent(event.orderId(),"ORDER_COMPLETED"));
+
+			if (product.getStockQuantity() < item.quantity()) {
+				productEventService.publish(
+						new OrderStatusEvent(event.orderId(), "ORDER_FAILED"));
+				return;
 			}
 		}
 
+		// Reduce Inventory
+		Cache cache = cacheManager.getCache("productCache");
 
+		for (OrderItemEvent item : event.items()) {
+
+			productRepository.decrementStock(
+					item.productId(),
+					item.quantity());
+
+			if (cache != null) {
+				cache.evict(item.productId());
+			}
+		}
+
+		// Publish Success
+		productEventService.publish(
+				new OrderStatusEvent(event.orderId(), "ORDER_COMPLETED"));
     }
 }

@@ -40,7 +40,7 @@ public class ProductController {
 	}
 	
 	@GetMapping("/{id}")
-	public ResponseEntity<ProductResponse> getProductById(@PathVariable("id") UUID id){
+	public ResponseEntity<ProductResponse> getProductById(@PathVariable UUID id){
 		return ResponseEntity.status(HttpStatus.OK).body(productService.getProductById(id));
 	}
 	
@@ -56,7 +56,7 @@ public class ProductController {
 	}
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<ProductResponse> updateProduct(@RequestBody @Valid UpdateProductRequest request,@PathVariable("id") UUID id){
+	public ResponseEntity<ProductResponse> updateProduct(@RequestBody @Valid UpdateProductRequest request, @PathVariable UUID id){
 		
 		ProductResponse updatedProduct = productService.updateProduct(id,request);
 		
@@ -66,7 +66,7 @@ public class ProductController {
 	
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<Void> deleteProduct(@PathVariable("id") UUID id){
+	public ResponseEntity<Void> deleteProduct(@PathVariable UUID id){
 		
 		productService.deleteProduct(id);
 		

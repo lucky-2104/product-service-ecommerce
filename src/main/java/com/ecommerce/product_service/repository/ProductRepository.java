@@ -23,4 +23,5 @@ public interface ProductRepository extends JpaRepository<Product,UUID> {
 	int decrementStock(@Param("productId") UUID productId , @Param("quantity") Integer quantity);
 
 
+
 }
